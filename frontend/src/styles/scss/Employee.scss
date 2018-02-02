@@ -1,0 +1,18 @@
+.org-chart {
+  .v-line {
+    border-right: 1px solid $gray-500;
+    height: 25px;
+    width: 50%;
+  }
+  .employee {
+    position: relative;
+    .h-line-r {
+      position: absolute;
+      border-bottom: 1px solid $gray-500;
+      height: 1px;
+      width: 30px;
+      right: -30px;
+      top: 50%;
+    }
+  }
+}
