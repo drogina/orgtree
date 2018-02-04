@@ -1,7 +1,7 @@
 import axios from 'axios';
 import URL from '../config/Api'
 
-let employeeUrl = URL + '/employees';
+let employeeUrl = URL + '/employees/';
 
 /**
  * Returns a list of all employees
@@ -17,7 +17,7 @@ export async function list() {
  * @returns {Promise<AxiosPromise<any>>}
  */
 export async function get(employeeId) {
-    return axios.get(employeeUrl + employeeId);
+    return axios.get(employeeUrl + employeeId + '/');
 }
 
 /**
@@ -28,7 +28,7 @@ export async function get(employeeId) {
  * @returns {Promise<AxiosPromise<any>>}
  */
 export async function update(employeeId, employee) {
-    return axios.put(employeeUrl + employeeId, employee);
+    return axios.put(employeeUrl + employeeId + '/', employee);
 }
 
 /**
@@ -47,5 +47,5 @@ export async function create(employee) {
  * @returns {Promise<AxiosPromise>}
  */
 export async function destroy(employeeId) {
-    return axios.delete(employeeUrl + employeeId);
+    return axios.delete(employeeUrl + employeeId + '/');
 }

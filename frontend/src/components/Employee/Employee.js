@@ -1,86 +1,20 @@
 import React, { Component } from 'react';
 import _ from 'lodash';
 import FA from '@fortawesome/react-fontawesome';
-import { faUserCircle, faPencilAlt, faEye } from '@fortawesome/fontawesome-free-solid';
+import { faEye } from '@fortawesome/fontawesome-free-solid';
 import * as EmployeeService from '../../services/employee';
+import Details from './Details';
 
-
-// employee details component
-const Details = ({tree, employee, onDetailsClose}) => {
-
-    const findSuper = (el, supervisorId) => {
-        if (el.id === supervisorId) {
-            return el;
-        }
-        else if (el.children) {
-            let supervisor;
-            for (let child of el.children) {
-                supervisor = findSuper(child, supervisorId);
-            }
-            return supervisor;
-        }
-        return null;
-    };
-
-    const supervisor = (employee.supervisor) ?
-        findSuper(tree, employee.supervisor)
-        : null;
-
-    return (
-        <div className="col details border p-3 mr-3">
-            <FA icon={faUserCircle} className="avatar text-secondary" />
-            <div className="row">
-                <div className="col">
-                    <p className="mb-0">
-                        <strong>Name: </strong>
-                        {employee.name}
-                    </p>
-                    <p className="mb-0">
-                        <strong>Title: </strong>
-                        {employee.title}
-                    </p>
-                    <p className="mb-0">
-                        <strong>Rank: </strong>
-                        {employee.rank}
-                    </p>
-                </div>
-                <div className="col">
-                    {
-                        supervisor ?
-                            <p className="mb-0">
-                                <strong>Supervisor: </strong>
-                                {supervisor.name}
-                            </p>
-                            : null
-                    }
-                    {
-                        (employee.children && employee.children.length > 0) ?
-                            <div className="row">
-                                <div className="col">
-                                    <strong>Employees: </strong>
-                                </div>
-                                <div className="col">
-                                    {
-                                        (employee.children).map((child) => {
-                                            return (
-                                                <p className="mb-0">{child.name}</p>
-                                            )
-                                        })
-                                    }
-                                </div>
-                            </div>
-                            : null
-                    }
-                </div>
-            </div>
-            <button className="btn btn-default" onClick={onDetailsClose}>Close</button>
-            <button className="btn btn-primary">Edit</button>
-        </div>
-    )
-};
-
-// employee data component
-const EmployeeComponent = ({employee, rankClass, showDetails}) => {
+/**
+ * Employee
+ * Renders the employee node for each employee in the organization
+ * @param {Object}      employee        The current employee being rendered
+ * @param {string}      rankClass       The class to append for two similarly ranked sibling emploeyes
+ * @param {Function}    showDetails     Ability to show an employee's details
+ * @returns {*}
+ * @constructor
+ */
+const Employee = ({employee, rankClass, showDetails}) => {
 
     return (
         <div className="employee">
@@ -103,10 +37,31 @@ const EmployeeComponent = ({employee, rankClass, showDetails}) => {
     )
 };
 
+/**
+ * OrgChart
+ * Recursively traverses the organization hierarchy and
+ * builds Employee component nodes for each employees' children
+ * @param {Object}      tree            The organization hierarchy
+ * @param {Function}    onEditClick     Displays the Details view for a given employee
+ * @returns {*} Returns the built organization chart
+ */
 const OrgChart = ({tree, onEditClick}) => {
 
+    /**
+     *
+     * @param {Object}      tree            The tree for employee node being rendered
+     * @param {Object[]}    parentChildren  Siblings of current employee
+     * @param {number}      currIndex       Index of the current child in parentChildren
+     * @returns {*}         Employee node components for the org chart
+     */
     const displayEmployees = (tree, parentChildren, currIndex) => {
 
+        /**
+         * Checks current employee's siblings for same rank
+         * If found, returns horizontal line class to be appended to employee's node
+         * @param   {number}    index   The index of current employee in parent's children
+         * @returns {string}            The horizontal line class or empty string
+         */
         const hasSameRankSibling = (index) => {
             if (!parentChildren || !parentChildren[index]) return '';
             return (index < (parentChildren || []).length - 1 &&
@@ -114,13 +69,12 @@ const OrgChart = ({tree, onEditClick}) => {
                 'h-line-r ' : '';
         };
 
-        const rankSiblings = (index) => {
-            return hasSameRankSibling(index);
-        };
-
+        /**
+         * Returns recursive rendering for remaining children
+         */
         const employees = ( (tree.children || []).map( (child, cIndex) => {
             return (
-                <div className="col">
+                <div className="col" key={cIndex}>
                     <div className="v-line" />
                     {displayEmployees(tree.children[cIndex],tree.children,cIndex)}
                 </div>
@@ -131,9 +85,9 @@ const OrgChart = ({tree, onEditClick}) => {
             <div className="org-chart">
                 <div className="row">
                     <div className="col">
-                        <EmployeeComponent
+                        <Employee
                             employee={tree}
-                            rankClass={rankSiblings(currIndex)}
+                            rankClass={hasSameRankSibling(currIndex)}
                             showDetails={onEditClick}
                         />
                     </div>
@@ -150,27 +104,72 @@ const OrgChart = ({tree, onEditClick}) => {
     );
 };
 
-
+/**
+ * Class EmployeeList
+ * Renders organization chart and Details when activated.
+ */
 export default class EmployeeList extends Component {
 
     constructor(props) {
         super(props);
         this.showDetails = this.showDetails.bind(this);
         this.hideDetails = this.hideDetails.bind(this);
-        this.state = {tree: {}, showDetails: false, detailEmployee: null}
+        this.saveEmployee = this.saveEmployee.bind(this);
+        this.state = {
+            tree: {},
+            showDetails: false,
+            detailEmployee: null
+        }
     }
 
+    /**
+     * Displays employee details for selected employee
+     * @param {Object} employee     Employee whose details are being viewed
+     */
     showDetails(employee) {
         this.setState({showDetails: true, detailEmployee: employee});
     }
 
+    /**
+     * Hides the Details view
+     */
     hideDetails() {
         this.setState({showDetails: false, detailEmployee: null});
     }
 
+    /**
+     * Builds employee data and updates the employee
+     * Then updates the state to re-render org chart
+     * @param {Object} employee     Employee whose details are being updated
+     * @returns {Promise<void>}
+     */
+    async saveEmployee(employee) {
+        let data = {
+            name: employee.name,
+            title: employee.title,
+            rank: employee.rank,
+            supervisor: employee.supervisor
+        };
+        await EmployeeService.update(employee.id, data);
+        let updatedTree = await this.getEmployees();
+        this.setState({tree: updatedTree, showDetails: false, detailEmployee: null});
+    }
+
+    /**
+     * Retrieves all employees in the organization
+     * Then builds and returns a JSON tree view based on supervisor hierarchy
+     * @returns {Promise<*>} The JSON organization hierarchy
+     */
     async getEmployees() {
         let employees = await EmployeeService.list();
 
+        /**
+         * Build the organization supervisor hierarchy as a JSON structure
+         * Beginning with the top-level supervisor (user whose supervisor is null)
+         * Generates an array, children, for each employee based on supervisor value
+         * @param {Object[]}    employees   An array of employee objects
+         * @returns {Object}    Returns the generated JSON tree
+         */
         function generateTree(employees) {
             let map = {}, tree = [], i;
 
@@ -194,7 +193,7 @@ export default class EmployeeList extends Component {
             return tree[0];
         }
 
-        // initialize children
+        // initialize children to empty arrays
         employees = employees.data.map(function(e) {
           return _.assign(e, {children: []})
         });
@@ -202,7 +201,11 @@ export default class EmployeeList extends Component {
         return generateTree(employees);
     }
 
-    // fetch all employees
+    /**
+     * Fetches all employees pre-mount to avoid re-rendering
+     * Updates employee tree on the state
+     * @returns {Promise<void>}
+     */
     async componentWillMount() {
         let tree = await this.getEmployees();
         this.setState({tree});
@@ -224,6 +227,7 @@ export default class EmployeeList extends Component {
                             tree={this.state.tree}
                             employee={this.state.detailEmployee}
                             onDetailsClose={this.hideDetails}
+                            onSubmit={this.saveEmployee}
                         />
                         : null}
 
