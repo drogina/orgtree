@@ -1,14 +1,92 @@
 import React, { Component } from 'react';
 import _ from 'lodash';
+import FA from '@fortawesome/react-fontawesome';
+import { faUserCircle, faPencilAlt, faEye } from '@fortawesome/fontawesome-free-solid';
 import * as EmployeeService from '../../services/employee';
 
 
+// employee details component
+const Details = ({tree, employee, onDetailsClose}) => {
+
+    const findSuper = (el, supervisorId) => {
+        if (el.id === supervisorId) {
+            return el;
+        }
+        else if (el.children) {
+            let supervisor;
+            for (let child of el.children) {
+                supervisor = findSuper(child, supervisorId);
+            }
+            return supervisor;
+        }
+        return null;
+    };
+
+    const supervisor = (employee.supervisor) ?
+        findSuper(tree, employee.supervisor)
+        : null;
+
+    return (
+        <div className="col details border p-3 mr-3">
+            <FA icon={faUserCircle} className="avatar text-secondary" />
+            <div className="row">
+                <div className="col">
+                    <p className="mb-0">
+                        <strong>Name: </strong>
+                        {employee.name}
+                    </p>
+                    <p className="mb-0">
+                        <strong>Title: </strong>
+                        {employee.title}
+                    </p>
+                    <p className="mb-0">
+                        <strong>Rank: </strong>
+                        {employee.rank}
+                    </p>
+                </div>
+                <div className="col">
+                    {
+                        supervisor ?
+                            <p className="mb-0">
+                                <strong>Supervisor: </strong>
+                                {supervisor.name}
+                            </p>
+                            : null
+                    }
+                    {
+                        (employee.children && employee.children.length > 0) ?
+                            <div className="row">
+                                <div className="col">
+                                    <strong>Employees: </strong>
+                                </div>
+                                <div className="col">
+                                    {
+                                        (employee.children).map((child) => {
+                                            return (
+                                                <p className="mb-0">{child.name}</p>
+                                            )
+                                        })
+                                    }
+                                </div>
+                            </div>
+                            : null
+                    }
+                </div>
+            </div>
+            <button className="btn btn-default" onClick={onDetailsClose}>Close</button>
+            <button className="btn btn-primary">Edit</button>
+        </div>
+    )
+};
+
 // employee data component
-const EmployeeComponent = ({employee, rankClass}) => {
-    console.log('component', employee)
+const EmployeeComponent = ({employee, rankClass, showDetails}) => {
 
     return (
         <div className="employee">
+            <button className="btn btn-link" onClick={() => showDetails(employee)}>
+                <FA icon={faEye}/>
+            </button>
             <div className="card">
                 <div className="card-block">
                     <h4 className="card-title">
@@ -25,7 +103,7 @@ const EmployeeComponent = ({employee, rankClass}) => {
     )
 };
 
-const OrgChart = ({tree}) => {
+const OrgChart = ({tree, onEditClick}) => {
 
     const displayEmployees = (tree, parentChildren, currIndex) => {
 
@@ -56,6 +134,7 @@ const OrgChart = ({tree}) => {
                         <EmployeeComponent
                             employee={tree}
                             rankClass={rankSiblings(currIndex)}
+                            showDetails={onEditClick}
                         />
                     </div>
                 </div>
@@ -76,7 +155,17 @@ export default class EmployeeList extends Component {
 
     constructor(props) {
         super(props);
-        this.state = {tree: {}}
+        this.showDetails = this.showDetails.bind(this);
+        this.hideDetails = this.hideDetails.bind(this);
+        this.state = {tree: {}, showDetails: false, detailEmployee: null}
+    }
+
+    showDetails(employee) {
+        this.setState({showDetails: true, detailEmployee: employee});
+    }
+
+    hideDetails() {
+        this.setState({showDetails: false, detailEmployee: null});
     }
 
     async getEmployees() {
@@ -121,7 +210,24 @@ export default class EmployeeList extends Component {
 
     render() {
         return (
-            <OrgChart tree={this.state.tree} />
+            <div className="row">
+                <div className="col">
+                    <OrgChart
+                        tree={this.state.tree}
+                        onEditClick={this.showDetails}
+                    />
+                </div>
+
+                {
+                    this.state.showDetails ?
+                        <Details
+                            tree={this.state.tree}
+                            employee={this.state.detailEmployee}
+                            onDetailsClose={this.hideDetails}
+                        />
+                        : null}
+
+            </div>
         )
     }
 }
