@@ -1,0 +1,23 @@
+version: '2.1'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    command: python3 manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/code
+      - /code/frontend
+    ports:
+      - "8000:8000"
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    volumes:
+      - ./frontend:/frontend
+    ports:
+      - "3000:3000" 
+    depends_on:
+      - api

@@ -79,6 +79,18 @@ const SupervisorSelection = ({supervisor, onChange, options}) => {
     )
 };
 
+/**
+ * Form used to edit or create an employee
+ * Creates or updates via EmployeeService on submission
+ * @param {Object}      employee            The employee being edited
+ * @param {Function}    onEmployeeChanged   Callback to update employee on root state
+ * @param {Function}    onSuperSelected     Callback to update employee supervisor for dropdown selection
+ * @param {Object}      supervisor          The employee's supervisor
+ * @param {Object[]}    options             Available supervisors for the employee based on rank
+ * @param {Function}    onSubmit            Callback to create or update employee
+ * @param {Function}    onCancel            Callback to cancel form submission
+ * @returns {*}         The edit form
+ */
 const EditDetails = ({employee, onEmployeeChanged, onSuperSelected,
                          supervisor, options, onSubmit, onCancel}) => {
     return (
@@ -129,6 +141,14 @@ const EditDetails = ({employee, onEmployeeChanged, onSuperSelected,
     )
 };
 
+/**
+ * View showing read only details of the selected employee
+ * @param {Object}      employee        The employee being viewed
+ * @param {Object}      supervisor      The employee's supervisor
+ * @param {Function}    editEmployee    Callback to show edit form
+ * @returns {*}         The read only details view
+ * @constructor
+ */
 const ReadOnlyDetails = ({employee, supervisor, editEmployee}) => {
     return (
         <div className="text-center">
@@ -292,6 +312,7 @@ export default class Details extends Component {
 
         let details;
 
+        // if editing or creating
         if (this.state.isEditing || !employee.id) {
             details = (
                 <EditDetails
