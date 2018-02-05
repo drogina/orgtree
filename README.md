@@ -16,8 +16,9 @@ These instructions will get you a copy of the project up and running on your loc
 
 #### Running Locally
 * [Python 3](https://www.python.org/downloads/release/python-364/)
-* [pip](https://pip.pypa.io/en/stable/installing/)
+* [pip 9](https://pip.pypa.io/en/stable/installing/)
 * [Virtualenv](https://virtualenv.pypa.io/en/stable/installation/)
+* [Node 8](https://nodejs.org/en/download/)
 
 ### Installing
 
@@ -27,9 +28,11 @@ Clone the repository:
 ```
 git clone https://github.com/drogina/orgtree.git
 ```
-In terminal, navigate to your repo:
+In terminal:
 ```
-cd /path/to/your/orgtree
+cd /path/to/your/orgtree/frontend
+npm install
+cd ..
 docker-compose up
 ```
 Access the application via `http://localhost:3000`
@@ -49,13 +52,11 @@ source ./venv/bin/activate
 pip install -r ./requirements.txt
 python3 manage.py runserver
 ```
-Open a separate terminal window, navigate to your repo:
+Open a separate terminal window:
 ```
-cd /path/to/your/orgtree
-cd frontend
+cd /path/to/your/orgtree/frontend
 npm install
-npm run build
-npm start
+npm run start
 ```
 
 Access the frontend application via `http://localhost:3000`

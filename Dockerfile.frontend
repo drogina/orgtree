@@ -1,15 +1,13 @@
-FROM node
+FROM node:8
+
+USER root
 
 ENV NPM_CONFIG_LOGLEVEL warn
 
 RUN mkdir -p /frontend
 WORKDIR /frontend
-COPY ./frontend ./
 
-RUN npm install
-
-# Build and optimize react app
-RUN npm run build
+COPY frontend /frontend/
 
 EXPOSE 3000
 
