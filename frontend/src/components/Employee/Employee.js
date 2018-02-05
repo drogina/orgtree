@@ -23,11 +23,7 @@ const Employee = ({employee, rankClass, showDetails}) => {
             </button>
             <div className="card">
                 <div className="card-block">
-                    <h4 className="card-title">
-                        <a href={"/employees/" + employee.id}>
-                            {employee.name}
-                        </a>
-                    </h4>
+                    <h4 className="card-title">{employee.name}</h4>
                     <h6 className="card-subtitle mb-2 text-muted">{employee.title}</h6>
                     <p className="card-text"><strong>Rank: </strong>{employee.rank}</p>
                 </div>
@@ -118,7 +114,7 @@ export default class EmployeeList extends Component {
         this.state = {
             tree: {},
             showDetails: false,
-            detailEmployee: null
+            detailEmployee: null,
         }
     }
 
@@ -127,14 +123,20 @@ export default class EmployeeList extends Component {
      * @param {Object} employee     Employee whose details are being viewed
      */
     showDetails(employee) {
-        this.setState({showDetails: true, detailEmployee: employee});
+        this.setState({
+            showDetails: true,
+            detailEmployee: employee,
+        });
     }
 
     /**
      * Hides the Details view
      */
     hideDetails() {
-        this.setState({showDetails: false, detailEmployee: null});
+        this.setState({
+            showDetails: false,
+            detailEmployee: null,
+        });
     }
 
     /**
@@ -208,29 +210,31 @@ export default class EmployeeList extends Component {
      */
     async componentWillMount() {
         let tree = await this.getEmployees();
-        this.setState({tree});
+        this.setState({tree: tree});
     }
 
     render() {
         return (
-            <div className="row">
-                <div className="col">
-                    <OrgChart
-                        tree={this.state.tree}
-                        onEditClick={this.showDetails}
-                    />
+            <div>
+                <div className="row m-3">
+                    <div className="col">
+                        <OrgChart
+                            tree={this.state.tree}
+                            onEditClick={this.showDetails}
+                        />
+                    </div>
                 </div>
 
                 {
-                    this.state.showDetails ?
+                    (this.state.showDetails) ?
                         <Details
                             tree={this.state.tree}
                             employee={this.state.detailEmployee}
                             onDetailsClose={this.hideDetails}
                             onSubmit={this.saveEmployee}
                         />
-                        : null}
-
+                        : null
+                }
             </div>
         )
     }

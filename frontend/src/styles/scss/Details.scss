@@ -1,0 +1,24 @@
+.details {
+  border-radius: 5px;
+  position: absolute;
+  z-index: 1;
+  right: 0;
+  top: 56px;
+  width: 50%;
+  height: 100%;
+  color: $white;
+  .avatar {
+    font-size: 128px;
+  }
+  fieldset {
+    max-height: 50%;
+    overflow: scroll;
+  }
+  label {
+    font-weight: bold;
+    span {
+      padding-left: 15px;
+      font-weight: normal;
+    }
+  }
+}

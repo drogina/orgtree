@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
+import _ from 'lodash';
 import FA from '@fortawesome/react-fontawesome';
-import { faUserCircle } from '@fortawesome/fontawesome-free-solid';
+import { faUserCircle, faSmile } from '@fortawesome/fontawesome-free-solid';
 
 /**
  * Renders an employees read-only supervisor
@@ -10,8 +11,7 @@ import { faUserCircle } from '@fortawesome/fontawesome-free-solid';
  */
 const Supervisor = ({supervisor}) => {
     return (
-        <p className="mb-0">
-            <strong>Supervisor: </strong>
+        <p id="supervisor">
             {supervisor ? supervisor.name : 'None, this is the boss!'}
         </p>
     )
@@ -25,11 +25,9 @@ const Supervisor = ({supervisor}) => {
 const Children = ({employee}) => {
     return (
         (employee.children && employee.children.length > 0) ?
-            <div className="row">
-                <div className="col">
-                    <strong>Employees: </strong>
-                </div>
-                <div className="col">
+            <div className="col">
+                <label htmlFor="employees">Employees</label>
+                <div>
                     {
                         (employee.children).map((child, i) => {
                             return (
@@ -81,6 +79,95 @@ const SupervisorSelection = ({supervisor, onChange, options}) => {
     )
 };
 
+const EditDetails = ({employee, onEmployeeChanged, onSuperSelected,
+                         supervisor, options, onSubmit, onCancel}) => {
+    return (
+        <form className="text-left">
+            <fieldset>
+                <div className="form-group">
+                    <label htmlFor="name">Name</label>
+                    <input type="text"
+                           className="form-control"
+                           id="name"
+                           value={employee.name}
+                           onChange={(e) => onEmployeeChanged('name', e)}/>
+                </div>
+                <div className="form-group">
+                    <label htmlFor="title">Title</label>
+                    <input type="text"
+                           className="form-control"
+                           id="title"
+                           value={employee.title}
+                           onChange={(e) => onEmployeeChanged('title', e)}/>
+                </div>
+                <div className="form-group">
+                    <label htmlFor="rank">Rank</label>
+                    <input type="number"
+                           className="form-control"
+                           id="rank" value={employee.rank}
+                           onChange={(e) => onEmployeeChanged('rank', e)}/>
+                </div>
+                <SupervisorSelection
+                    supervisor={supervisor}
+                    onChange={onSuperSelected}
+                    options={options}/>
+            </fieldset>
+
+            <div className="text-right">
+                <button type="button"
+                        className="btn btn-outline-secondary mr-3"
+                        onClick={onCancel}>
+                    Cancel
+                </button>
+                <button type="submit"
+                        className="btn btn-outline-light"
+                        onClick={() => onSubmit(employee)}>
+                    Save
+                </button>
+            </div>
+        </form>
+    )
+};
+
+const ReadOnlyDetails = ({employee, supervisor, editEmployee}) => {
+    return (
+        <div className="text-center">
+            <div className="row">
+                <div className="col">
+                    <label htmlFor="name">Name
+                        <span id="name">{employee.name}</span>
+                    </label>
+                </div>
+                <div className="col">
+                    <label htmlFor="title">Title
+                        <span id="title">{employee.title}</span>
+                    </label>
+                </div>
+            </div>
+            <div className="row">
+                <div className="col">
+                    <label htmlFor="rank">Rank
+                        <span id="rank">{employee.rank}</span>
+                    </label>
+                </div>
+            </div>
+            <div className="row">
+                <div className="col">
+                    <label htmlFor="supervisor">Supervisor</label>
+                    <Supervisor supervisor={supervisor} />
+                </div>
+                <Children employee={employee} />
+            </div>
+
+            <button type="button"
+                    className="btn btn-outline-light btn-block"
+                    onClick={editEmployee}>
+                Edit
+            </button>
+        </div>
+    )
+};
+
 /**
  * Details
  * Renders employee details and editing view
@@ -89,17 +176,22 @@ export default class Details extends Component {
     constructor(props) {
         super(props);
         this.onSuperSelected = this.onSuperSelected.bind(this);
+        this.onEmployeeChanged = this.onEmployeeChanged.bind(this);
+        this.editEmployee = this.editEmployee.bind(this);
 
         this.state = {
             tree: props.tree,
             employee: props.employee,
             onDetailsClose: props.onDetailsClose,
             onSubmit: props.onSubmit,
-            supervisor: (props.employee.supervisor) ?
+            supervisor: (_.has(props, 'employee.supervisor')) ?
                 this.findSuper(props.tree, props.employee.supervisor) :
                 null,
-            options: this.findPossibleSupers(props.tree, props.employee.rank, props.employee.id),
+            options: (_.has(props, 'employee.rank') && _.has(props, 'employee.id')) ?
+                this.findPossibleSupers(props.tree, props.employee.rank, props.employee.id) :
+                null,
             isEditing: false,
+            detailClass: props.detailClass,
         };
     }
 
@@ -115,11 +207,14 @@ export default class Details extends Component {
             return el;
         }
         // node has children
-        else if (el.children) {
+        else if (el.children && el.children.length > 0) {
             let supervisor;
-            // check each child for match
+            // check each child until a match is found
             for (let child of el.children) {
                 supervisor = this.findSuper(child, supervisorId);
+                if (supervisor) {
+                    return supervisor;
+                }
             }
             return supervisor;
         }
@@ -157,7 +252,7 @@ export default class Details extends Component {
      */
     editEmployee = () => {
         this.setState({
-            isEditing: true
+            isEditing: !this.state.isEditing
         })
     };
 
@@ -185,63 +280,35 @@ export default class Details extends Component {
         this.setState({employee})
     };
 
+
+
     render () {
         const employee = this.state.employee;
+        const supervisor = this.state.supervisor;
+
+        let details = this.state.isEditing ?
+            <EditDetails
+                employee={employee}
+                onEmployeeChanged={this.onEmployeeChanged}
+                onSuperSelected={this.onSuperSelected}
+                supervisor={supervisor}
+                options={this.state.options}
+                onSubmit={this.state.onSubmit}
+                onCancel={this.editEmployee}
+            /> :
+            <ReadOnlyDetails
+                employee={employee}
+                supervisor={supervisor}
+                editEmployee={this.editEmployee}
+            />;
+
         return (
-            <div className="col details border p-3 mr-3">
-                <FA icon={faUserCircle} className="avatar text-secondary" />
-                <form>
-                    <div className="form-group">
-                        <label htmlFor="name">Name</label>
-                        <input type="text"
-                               className="form-control"
-                               id="name"
-                               value={employee.name}
-                               onChange={(e) => this.onEmployeeChanged('name', e)}/>
-                    </div>
-                    <div className="form-group">
-                        <label htmlFor="title">Title</label>
-                        <input type="text"
-                               className="form-control"
-                               id="title"
-                               value={employee.title}
-                               onChange={(e) => this.onEmployeeChanged('title', e)}/>
-                    </div>
-                    <div className="form-group">
-                        <label htmlFor="rank">Rank</label>
-                        <input type="number"
-                               className="form-control"
-                               id="rank" value={employee.rank}
-                               onChange={(e) => this.onEmployeeChanged('rank', e)}/>
-                    </div>
-                    <SupervisorSelection
-                        supervisor={this.state.supervisor}
-                        onChange={this.onSuperSelected}
-                        options={this.state.options}/>
-                </form>
-                <div className="row">
-                    <div className="col">
-                        <p className="mb-0">
-                            <strong>Name: </strong>
-                            {employee.name}
-                        </p>
-                        <p className="mb-0">
-                            <strong>Title: </strong>
-                            {employee.title}
-                        </p>
-                        <p className="mb-0">
-                            <strong>Rank: </strong>
-                            {employee.rank}
-                        </p>
-                    </div>
-                    <div className="col">
-                        <Supervisor supervisor={this.state.supervisor} />
-                        <Children employee={this.state.employee}/>
-                    </div>
-                </div>
-                <button className="btn btn-default" onClick={this.state.onDetailsClose}>Close</button>
-                <button className="btn btn-primary" onClick={this.editEmployee}>Edit</button>
-                <button className="btn btn-primary" onClick={() => this.state.onSubmit(employee)}>Save</button>
+            <div className="details border bg-dark p-3">
+                <button type="button" className="close"
+                        onClick={this.state.onDetailsClose}>
+                    &times;</button>
+                <FA icon={faSmile} className="avatar mb-3" />
+                {(employee) ? details : null}
             </div>
         )
     }

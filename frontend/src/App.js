@@ -5,11 +5,9 @@ import EmployeeList from './components/Employee/Employee'
 class App extends Component {
   render() {
     return (
-      <div className="App">
+      <div className="App position-relative h-100">
         <Header />
-        <div className="m-3">
-            <EmployeeList />
-        </div>
+        <EmployeeList />
       </div>
     );
   }
