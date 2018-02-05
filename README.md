@@ -47,7 +47,7 @@ git clone https://github.com/drogina/orgtree.git
 In terminal, navigate to your repo:
 ```
 cd /path/to/your/orgtree
-python3 -m venv .
+python3 -m venv ./venv
 source ./venv/bin/activate
 pip install -r ./requirements.txt
 python3 manage.py runserver
@@ -56,7 +56,7 @@ Open a separate terminal window:
 ```
 cd /path/to/your/orgtree/frontend
 npm install
-npm run start
+npm start
 ```
 
 Access the frontend application via `http://localhost:3000`
