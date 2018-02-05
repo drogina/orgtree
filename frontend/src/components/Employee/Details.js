@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import _ from 'lodash';
 import FA from '@fortawesome/react-fontawesome';
-import { faUserCircle, faSmile } from '@fortawesome/fontawesome-free-solid';
+import { faHandSpock } from '@fortawesome/fontawesome-free-solid';
 
 /**
  * Renders an employees read-only supervisor
@@ -251,9 +251,15 @@ export default class Details extends Component {
      * Allow editing of employee
      */
     editEmployee = () => {
-        this.setState({
-            isEditing: !this.state.isEditing
-        })
+        if (this.state.employee.id) {
+            this.setState({
+                isEditing: !this.state.isEditing
+            });
+        }
+        else {
+            this.state.onDetailsClose();
+        }
+
     };
 
     /**
@@ -280,34 +286,41 @@ export default class Details extends Component {
         this.setState({employee})
     };
 
-
-
     render () {
         const employee = this.state.employee;
         const supervisor = this.state.supervisor;
 
-        let details = this.state.isEditing ?
-            <EditDetails
-                employee={employee}
-                onEmployeeChanged={this.onEmployeeChanged}
-                onSuperSelected={this.onSuperSelected}
-                supervisor={supervisor}
-                options={this.state.options}
-                onSubmit={this.state.onSubmit}
-                onCancel={this.editEmployee}
-            /> :
-            <ReadOnlyDetails
-                employee={employee}
-                supervisor={supervisor}
-                editEmployee={this.editEmployee}
-            />;
+        let details;
+
+        if (this.state.isEditing || !employee.id) {
+            details = (
+                <EditDetails
+                    employee={employee}
+                    onEmployeeChanged={this.onEmployeeChanged}
+                    onSuperSelected={this.onSuperSelected}
+                    supervisor={supervisor}
+                    options={this.state.options}
+                    onSubmit={this.state.onSubmit}
+                    onCancel={this.editEmployee}
+                />
+            )
+        }
+        else {
+            details = (
+                <ReadOnlyDetails
+                    employee={employee}
+                    supervisor={supervisor}
+                    editEmployee={this.editEmployee}
+                />
+            )
+        }
 
         return (
             <div className="details border bg-dark p-3">
                 <button type="button" className="close"
                         onClick={this.state.onDetailsClose}>
                     &times;</button>
-                <FA icon={faSmile} className="avatar mb-3" />
+                <FA icon={faHandSpock} className="avatar mb-3" />
                 {(employee) ? details : null}
             </div>
         )

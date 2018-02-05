@@ -149,10 +149,18 @@ export default class EmployeeList extends Component {
         let data = {
             name: employee.name,
             title: employee.title,
-            rank: employee.rank,
-            supervisor: employee.supervisor
+            rank: employee.rank
         };
-        await EmployeeService.update(employee.id, data);
+
+        if (employee.id) {
+            data['supervisor'] = employee.supervisor;
+            await EmployeeService.update(employee.id, data);
+        }
+        else {
+            data['supervisor'] = this.state.tree.id;
+            await EmployeeService.create(data);
+        }
+
         let updatedTree = await this.getEmployees();
         this.setState({tree: updatedTree, showDetails: false, detailEmployee: null});
     }
@@ -216,6 +224,11 @@ export default class EmployeeList extends Component {
     render() {
         return (
             <div>
+                <button type="button"
+                        className="btn btn-success btn-block btn-lg rounded-0"
+                        onClick={this.showDetails}>
+                    Add Employee
+                </button>
                 <div className="row m-3">
                     <div className="col">
                         <OrgChart
