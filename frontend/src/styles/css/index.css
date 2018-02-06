@@ -6068,11 +6068,6 @@ code {
 
 .org-chart .employee {
   position: relative; }
-  .org-chart .employee .btn.btn-link {
-    position: absolute;
-    right: 0;
-    top: 0;
-    z-index: 1; }
   .org-chart .employee .h-line-r {
     position: absolute;
     border-bottom: 1px solid #adb5bd;
@@ -6080,6 +6075,9 @@ code {
     width: 30px;
     right: -30px;
     top: 50%; }
+
+.org-chart .btn-trash {
+  color: #dc3545; }
 
 .details {
   border-radius: 5px;

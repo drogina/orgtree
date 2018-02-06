@@ -6,12 +6,6 @@
   }
   .employee {
     position: relative;
-    .btn.btn-link {
-      position:absolute;
-      right: 0;
-      top: 0;
-      z-index: 1;
-    }
 
     .h-line-r {
       position: absolute;
@@ -21,6 +15,9 @@
       right: -30px;
       top: 50%;
     }
+  }
+  .btn-trash {
+    color: $form-feedback-invalid-color;
   }
 
 }

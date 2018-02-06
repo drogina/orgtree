@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import _ from 'lodash';
 import FA from '@fortawesome/react-fontawesome';
-import { faEye } from '@fortawesome/fontawesome-free-solid';
+import { faEye, faTrash } from '@fortawesome/fontawesome-free-solid';
 import * as EmployeeService from '../../services/employee';
 import Details from './Details';
 
@@ -10,22 +10,34 @@ import Details from './Details';
  * Renders the employee node for each employee in the organization
  * @param {Object}      employee        The current employee being rendered
  * @param {string}      rankClass       The class to append for two similarly ranked sibling emploeyes
- * @param {Function}    showDetails     Ability to show an employee's details
+ * @param {Function}    showDetails     Callback to show an employee's details
+ * @param {Function}    deleteEmployee  Callback to delete an employee
  * @returns {*}
  * @constructor
  */
-const Employee = ({employee, rankClass, showDetails}) => {
+const Employee = ({employee, rankClass, showDetails, deleteEmployee}) => {
 
     return (
         <div className="employee">
-            <button className="btn btn-link" onClick={() => showDetails(employee)}>
-                <FA icon={faEye}/>
-            </button>
             <div className="card">
                 <div className="card-block">
                     <h4 className="card-title">{employee.name}</h4>
                     <h6 className="card-subtitle mb-2 text-muted">{employee.title}</h6>
                     <p className="card-text"><strong>Rank: </strong>{employee.rank}</p>
+                    <div>
+                        <button className="btn btn-sm btn-link"
+                                onClick={() => showDetails(employee)}>
+                            <FA icon={faEye}/>
+                        </button>
+                        {
+                            employee.children && employee.children.length <= 0 ?
+                                <button className="btn btn-sm btn-link btn-trash"
+                                        onClick={() => deleteEmployee(employee.id)}>
+                                    <FA icon={faTrash}/>
+                                </button>
+                                : null
+                        }
+                    </div>
                 </div>
             </div>
             <div className={rankClass} />
@@ -41,7 +53,7 @@ const Employee = ({employee, rankClass, showDetails}) => {
  * @param {Function}    onEditClick     Displays the Details view for a given employee
  * @returns {*} Returns the built organization chart
  */
-const OrgChart = ({tree, onEditClick}) => {
+const OrgChart = ({tree, onEditClick, onDeleteClick}) => {
 
     /**
      *
@@ -85,6 +97,7 @@ const OrgChart = ({tree, onEditClick}) => {
                             employee={tree}
                             rankClass={hasSameRankSibling(currIndex)}
                             showDetails={onEditClick}
+                            deleteEmployee={onDeleteClick}
                         />
                     </div>
                 </div>
@@ -111,6 +124,7 @@ export default class EmployeeList extends Component {
         this.showDetails = this.showDetails.bind(this);
         this.hideDetails = this.hideDetails.bind(this);
         this.saveEmployee = this.saveEmployee.bind(this);
+        this.deleteEmployee = this.deleteEmployee.bind(this);
         this.state = {
             tree: {},
             showDetails: false,
@@ -139,6 +153,8 @@ export default class EmployeeList extends Component {
         });
     }
 
+
+
     /**
      * Builds employee data and updates the employee
      * Then updates the state to re-render org chart
@@ -161,8 +177,22 @@ export default class EmployeeList extends Component {
             await EmployeeService.create(data);
         }
 
+        this.setState({
+            showDetails: false,
+            detailEmployee: null
+        },)
+    }
+
+    async deleteEmployee(employeeId) {
+        if (window.confirm('Are you sure?')) {
+            await EmployeeService.destroy(employeeId);
+            await this.buildTree();
+        }
+    }
+
+    async buildTree() {
         let updatedTree = await this.getEmployees();
-        this.setState({tree: updatedTree, showDetails: false, detailEmployee: null});
+        this.setState({tree: updatedTree});
     }
 
     /**
@@ -217,8 +247,7 @@ export default class EmployeeList extends Component {
      * @returns {Promise<void>}
      */
     async componentWillMount() {
-        let tree = await this.getEmployees();
-        this.setState({tree: tree});
+        await this.buildTree();
     }
 
     render() {
@@ -234,6 +263,7 @@ export default class EmployeeList extends Component {
                         <OrgChart
                             tree={this.state.tree}
                             onEditClick={this.showDetails}
+                            onDeleteClick={this.deleteEmployee}
                         />
                     </div>
                 </div>

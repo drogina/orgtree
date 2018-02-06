@@ -354,16 +354,21 @@ export default class Details extends Component {
             case 'rank':
                 let supervisor = this.state.supervisor;
                 let employee = this.state.employee;
+
+                // find the highest rank of employee's children
                 let maxChildRank = _.max( (employee.children || []).map( (child) => {
                     return child.rank
                 }));
 
+                // if rank is greater than supervisor's
                 if (!!supervisor && newValue > supervisor.rank) {
                     errors['rank'] = 'Rank cannot be greater than supervisor\'s';
                 }
+                // if rank is less than any child's
                 else if ( newValue < maxChildRank ) {
                     errors['rank'] = 'Rank must be greater than all children';
                 }
+                // if rank is less than 1
                 else if ( !newValue || newValue <= 0 ) {
                     errors['rank'] = 'Rank must be greater than 0';
                 }
@@ -380,20 +385,19 @@ export default class Details extends Component {
                 }
         }
 
-
-
         // set rank error and
         this.setState({
             formErrors: errors
         }, this.validateForm);
     };
 
+    /**
+     * Determines whether or not the entire form is valid for submission
+     */
     validateForm = () => {
         const isValid = this.state.formErrors.rank.length <= 0 &&
             this.state.formErrors.name.length <= 0 &&
             this.state.formErrors.title.length <= 0;
-
-        console.log(this.state.formErrors)
 
         this.setState({
             formValid: isValid
@@ -404,14 +408,18 @@ export default class Details extends Component {
         const employee = this.state.employee;
         let supervisor, details;
 
+        // if employee already has a supervisor
         if (this.state.supervisor) {
             supervisor = this.state.supervisor;
         }
+        // if selected employee is not the top of the tree
+        // we assume this is then a new employee and
+        // default the supervisor to the top level employee
         else if (employee.id !== this.state.tree.id) {
             supervisor = this.state.tree;
         }
 
-        // if editing or creating
+        // if editing or creating, show editable form
         if (this.state.isEditing || !employee.id) {
             details = (
                 <EditDetails
