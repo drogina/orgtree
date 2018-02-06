@@ -48,11 +48,10 @@ const Children = ({employee}) => {
  */
 const SupervisorOptions = ({options}) => {
     let items = [];
-    (options || []).map( (option,i) => {
-        items.push(
-            <option value={option.id} key={i}>{option.name}</option>
-        )
-    });
+    items.push((options || []).map( (option, i) => {
+        return <option value={option.id} key={i}>{option.name}</option>
+
+    }));
     return items;
 };
 
@@ -92,32 +91,41 @@ const SupervisorSelection = ({supervisor, onChange, options}) => {
  * @returns {*}         The edit form
  */
 const EditDetails = ({employee, onEmployeeChanged, onSuperSelected,
-                         supervisor, options, onSubmit, onCancel}) => {
+                         supervisor, options,
+                         onSubmit, onCancel, formValid, rankError}) => {
+    console.log(employee, 'edit')
     return (
-        <form className="text-left">
+        <form className="text-left was-validated">
             <fieldset>
                 <div className="form-group">
                     <label htmlFor="name">Name</label>
                     <input type="text"
                            className="form-control"
+                           name="name"
                            id="name"
+                           required
                            value={employee.name}
-                           onChange={(e) => onEmployeeChanged('name', e)}/>
+                           onChange={(e) => onEmployeeChanged(e)}/>
                 </div>
                 <div className="form-group">
                     <label htmlFor="title">Title</label>
                     <input type="text"
                            className="form-control"
+                           name="title"
                            id="title"
+                           required
                            value={employee.title}
-                           onChange={(e) => onEmployeeChanged('title', e)}/>
+                           onChange={(e) => onEmployeeChanged(e)}/>
                 </div>
-                <div className="form-group">
+                <div className={"form-group"}>
                     <label htmlFor="rank">Rank</label>
                     <input type="number"
-                           className="form-control"
+                           className={"form-control" + (rankError.length > 0 ? ' is-invalid' : '')}
+                           name="rank"
                            id="rank" value={employee.rank}
-                           onChange={(e) => onEmployeeChanged('rank', e)}/>
+                           required
+                           onChange={(e) => onEmployeeChanged(e)}/>
+                    <p className="invalid-feedback">{rankError}</p>
                 </div>
                 <SupervisorSelection
                     supervisor={supervisor}
@@ -125,7 +133,7 @@ const EditDetails = ({employee, onEmployeeChanged, onSuperSelected,
                     options={options}/>
             </fieldset>
 
-            <div className="text-right">
+            <div className="text-center">
                 <button type="button"
                         className="btn btn-outline-secondary mr-3"
                         onClick={onCancel}>
@@ -133,7 +141,8 @@ const EditDetails = ({employee, onEmployeeChanged, onSuperSelected,
                 </button>
                 <button type="submit"
                         className="btn btn-outline-light"
-                        onClick={() => onSubmit(employee)}>
+                        onClick={() => onSubmit(employee)}
+                        disabled={!formValid}>
                     Save
                 </button>
             </div>
@@ -149,7 +158,7 @@ const EditDetails = ({employee, onEmployeeChanged, onSuperSelected,
  * @returns {*}         The read only details view
  * @constructor
  */
-const ReadOnlyDetails = ({employee, supervisor, editEmployee}) => {
+const ReadOnlyDetails = ({employee, supervisor, editEmployee, onClose}) => {
     return (
         <div className="text-center">
             <div className="row">
@@ -179,11 +188,18 @@ const ReadOnlyDetails = ({employee, supervisor, editEmployee}) => {
                 <Children employee={employee} />
             </div>
 
-            <button type="button"
-                    className="btn btn-outline-light btn-block"
-                    onClick={editEmployee}>
-                Edit
-            </button>
+            <div className="text-center mt-3">
+                <button type="button"
+                        className="btn btn-outline-secondary mr-3"
+                        onClick={onClose}>
+                    Close
+                </button>
+                <button type="button"
+                        className="btn btn-outline-light"
+                        onClick={editEmployee}>
+                    Edit
+                </button>
+            </div>
         </div>
     )
 };
@@ -198,10 +214,11 @@ export default class Details extends Component {
         this.onSuperSelected = this.onSuperSelected.bind(this);
         this.onEmployeeChanged = this.onEmployeeChanged.bind(this);
         this.editEmployee = this.editEmployee.bind(this);
+        this.validateRank = this.validateRank.bind(this);
 
         this.state = {
             tree: props.tree,
-            employee: props.employee,
+            employee: !!props.employee.id ? props.employee : {name: '', title: '', rank: 1},
             onDetailsClose: props.onDetailsClose,
             onSubmit: props.onSubmit,
             supervisor: (_.has(props, 'employee.supervisor')) ?
@@ -211,7 +228,8 @@ export default class Details extends Component {
                 this.findPossibleSupers(props.tree, props.employee.rank, props.employee.id) :
                 null,
             isEditing: false,
-            detailClass: props.detailClass,
+            rankError: '',
+            formValid: false,
         };
     }
 
@@ -271,11 +289,15 @@ export default class Details extends Component {
      * Allow editing of employee
      */
     editEmployee = () => {
+        // if editing, reset employee data
+        // and go back to unmodified details
         if (this.state.employee.id) {
             this.setState({
-                isEditing: !this.state.isEditing
+                isEditing: !this.state.isEditing,
+                employee: this.props.employee
             });
         }
+        // else close details
         else {
             this.state.onDetailsClose();
         }
@@ -290,9 +312,9 @@ export default class Details extends Component {
         let supervisor = this.findSuper(this.state.tree, parseInt(e.target.value));
         let employee = Object.assign({}, this.state.employee);
         employee['supervisor'] = parseInt(e.target.value);
-        this.setState({
-            supervisor, employee
-        });
+        this.setState(() => {
+            return {supervisor: supervisor, employee: employee};
+        }, () => { this.validateRank(employee.rank) });
     };
 
     /**
@@ -300,10 +322,48 @@ export default class Details extends Component {
      * @param {string}  property    The employee field being updated
      * @param {Object}  e           The event object
      */
-    onEmployeeChanged = (property, e) => {
+    onEmployeeChanged = (e) => {
         let employee = Object.assign({}, this.state.employee);
-        employee[property] = e.target.value;
-        this.setState({employee})
+
+        const property = e.target.id;
+        const value = e.target.value;
+
+        employee[property] = value;
+
+        this.setState({employee: employee},
+            () => { this.validateRank(value) }
+        )
+    };
+
+    /**
+     * Validates the employee's new rank
+     * Sets rank error if new rank is greater than the supervisor's rank
+     * Sets rank error if new rank is less than any child's rank
+     * @param newRank
+     */
+    validateRank = (newRank) => {
+        let rankError = this.state.rankError;
+        let supervisor = this.state.isEditing ? this.state.supervisor : this.state.tree;
+        let employee = this.state.employee;
+        let maxChildRank = _.max( (employee.children || []).map( (child) => {
+            return child.rank
+        }));
+
+        if (!!supervisor && newRank > supervisor.rank) {
+            rankError = 'Rank cannot be greater than supervisor\'s';
+        }
+        else if ( newRank < maxChildRank) {
+            rankError = 'Rank must be greater than all children';
+        }
+        else {
+            rankError = '';
+        }
+
+        // set rank error and
+        this.setState({
+            rankError: rankError,
+            formValid: rankError.length <= 0
+        });
     };
 
     render () {
@@ -323,6 +383,8 @@ export default class Details extends Component {
                     options={this.state.options}
                     onSubmit={this.state.onSubmit}
                     onCancel={this.editEmployee}
+                    formValid={this.state.formValid}
+                    rankError={this.state.rankError}
                 />
             )
         }
@@ -332,6 +394,7 @@ export default class Details extends Component {
                     employee={employee}
                     supervisor={supervisor}
                     editEmployee={this.editEmployee}
+                    onClose={this.state.onDetailsClose}
                 />
             )
         }

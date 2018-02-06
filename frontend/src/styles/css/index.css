@@ -6089,6 +6089,7 @@ code {
   top: 56px;
   width: 50%;
   height: 100%;
+  min-height: 700px;
   color: #fff; }
   .details .avatar {
     font-size: 128px; }
@@ -6100,3 +6101,7 @@ code {
     .details label span {
       padding-left: 15px;
       font-weight: normal; }
+  .details .was-validated .form-control.is-invalid, .details .was-validated .form-control.is-invalid:valid, .details .was-validated .form-control.is-invalid:focus, .details .was-validated .form-control.is-invalid:valid:focus {
+    border-color: #dc3545;
+    -webkit-box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25); }
