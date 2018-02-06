@@ -6074,7 +6074,8 @@ code {
     height: 1px;
     width: 30px;
     right: -30px;
-    top: 50%; }
+    top: 50%;
+    visibility: hidden; }
 
 .org-chart .btn-trash {
   color: #dc3545; }

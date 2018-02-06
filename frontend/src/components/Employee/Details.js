@@ -49,7 +49,7 @@ const Children = ({employee}) => {
 const SupervisorOptions = ({options}) => {
     let items = [];
     items.push((options || []).map( (option, i) => {
-        return <option value={option.id} key={i}>{option.name}</option>
+        return <option value={option.id} key={i}>{option.name + ' (Rank: ' + option.rank + ')'}</option>
 
     }));
     return items;
@@ -282,7 +282,7 @@ export default class Details extends Component {
         // node has children
         else if (el.children) {
             // add the current node to the return array
-            supers = supers.concat([{id: el.id, name: el.name}]);
+            supers = supers.concat([{id: el.id, name: el.name, rank: el.rank}]);
             // check each child for possible supers
             for (let child of el.children) {
                 supers = supers.concat(this.findPossibleSupers(child, rank, id));
@@ -315,9 +315,9 @@ export default class Details extends Component {
      * @param {Object}  e   The event object
      */
     onSuperSelected = (e) => {
-        let supervisor = this.findSuper(this.state.tree, parseInt(e.target.value));
+        let supervisor = this.findSuper(this.state.tree, parseInt(e.target.value, 10));
         let employee = Object.assign({}, this.state.employee);
-        employee['supervisor'] = parseInt(e.target.value);
+        employee['supervisor'] = parseInt(e.target.value, 10);
         this.setState(() => {
             return {supervisor: supervisor, employee: employee};
         }, () => { this.validateFields(employee.rank, 'rank') });

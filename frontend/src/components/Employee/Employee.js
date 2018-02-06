@@ -162,19 +162,11 @@ export default class EmployeeList extends Component {
      * @returns {Promise<void>}
      */
     async saveEmployee(employee) {
-        let data = {
-            name: employee.name,
-            title: employee.title,
-            rank: employee.rank
-        };
-
         if (employee.id) {
-            data['supervisor'] = employee.supervisor;
-            await EmployeeService.update(employee.id, data);
+            await EmployeeService.update(employee.id, employee);
         }
         else {
-            data['supervisor'] = this.state.tree.id;
-            await EmployeeService.create(data);
+            await EmployeeService.create(employee);
         }
 
         this.setState({
