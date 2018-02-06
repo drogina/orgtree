@@ -88,44 +88,48 @@ const SupervisorSelection = ({supervisor, onChange, options}) => {
  * @param {Object[]}    options             Available supervisors for the employee based on rank
  * @param {Function}    onSubmit            Callback to create or update employee
  * @param {Function}    onCancel            Callback to cancel form submission
+ * @param {boolean}     formValid           Determines whether or not form can be submitted
+ * @param {Object}      formErrors          Text errors for name, title, and rank fields
  * @returns {*}         The edit form
  */
 const EditDetails = ({employee, onEmployeeChanged, onSuperSelected,
                          supervisor, options,
-                         onSubmit, onCancel, formValid, rankError}) => {
-    console.log(employee, 'edit')
+                         onSubmit, onCancel, formValid, formErrors}) => {
+
     return (
         <form className="text-left was-validated">
             <fieldset>
                 <div className="form-group">
                     <label htmlFor="name">Name</label>
                     <input type="text"
-                           className="form-control"
+                           className={"form-control" + (formErrors.name.length > 0 ? ' is-invalid' : '')}
                            name="name"
                            id="name"
                            required
                            value={employee.name}
                            onChange={(e) => onEmployeeChanged(e)}/>
+                    <p className="invalid-feedback">{formErrors.name}</p>
                 </div>
                 <div className="form-group">
                     <label htmlFor="title">Title</label>
                     <input type="text"
-                           className="form-control"
+                           className={"form-control" + (formErrors.title.length > 0 ? ' is-invalid' : '')}
                            name="title"
                            id="title"
                            required
                            value={employee.title}
                            onChange={(e) => onEmployeeChanged(e)}/>
+                    <p className="invalid-feedback">{formErrors.title}</p>
                 </div>
                 <div className={"form-group"}>
                     <label htmlFor="rank">Rank</label>
                     <input type="number"
-                           className={"form-control" + (rankError.length > 0 ? ' is-invalid' : '')}
+                           className={"form-control" + (formErrors.rank.length > 0 ? ' is-invalid' : '')}
                            name="rank"
                            id="rank" value={employee.rank}
                            required
                            onChange={(e) => onEmployeeChanged(e)}/>
-                    <p className="invalid-feedback">{rankError}</p>
+                    <p className="invalid-feedback">{formErrors.rank}</p>
                 </div>
                 <SupervisorSelection
                     supervisor={supervisor}
@@ -155,6 +159,7 @@ const EditDetails = ({employee, onEmployeeChanged, onSuperSelected,
  * @param {Object}      employee        The employee being viewed
  * @param {Object}      supervisor      The employee's supervisor
  * @param {Function}    editEmployee    Callback to show edit form
+ * @param {Function}    onClose         Callback to close details view
  * @returns {*}         The read only details view
  * @constructor
  */
@@ -214,21 +219,22 @@ export default class Details extends Component {
         this.onSuperSelected = this.onSuperSelected.bind(this);
         this.onEmployeeChanged = this.onEmployeeChanged.bind(this);
         this.editEmployee = this.editEmployee.bind(this);
-        this.validateRank = this.validateRank.bind(this);
+        this.validateFields = this.validateFields.bind(this);
+
+        // initialize an empty employee if creating
+        const employee = !!props.employee.id ?
+            props.employee :
+            {name: '', title: '', rank: 1, supervisor: props.tree.id};
 
         this.state = {
             tree: props.tree,
-            employee: !!props.employee.id ? props.employee : {name: '', title: '', rank: 1},
+            employee: employee,
             onDetailsClose: props.onDetailsClose,
             onSubmit: props.onSubmit,
-            supervisor: (_.has(props, 'employee.supervisor')) ?
-                this.findSuper(props.tree, props.employee.supervisor) :
-                null,
-            options: (_.has(props, 'employee.rank') && _.has(props, 'employee.id')) ?
-                this.findPossibleSupers(props.tree, props.employee.rank, props.employee.id) :
-                null,
+            supervisor: this.findSuper(props.tree, employee.supervisor),
+            options: this.findPossibleSupers(props.tree, employee.rank, employee.id),
             isEditing: false,
-            rankError: '',
+            formErrors: {name: '', title: '', rank: ''},
             formValid: false,
         };
     }
@@ -314,13 +320,12 @@ export default class Details extends Component {
         employee['supervisor'] = parseInt(e.target.value);
         this.setState(() => {
             return {supervisor: supervisor, employee: employee};
-        }, () => { this.validateRank(employee.rank) });
+        }, () => { this.validateFields(employee.rank, 'rank') });
     };
 
     /**
      * Updates the employee values on input change
-     * @param {string}  property    The employee field being updated
-     * @param {Object}  e           The event object
+     * @param {Object}  e   The event object
      */
     onEmployeeChanged = (e) => {
         let employee = Object.assign({}, this.state.employee);
@@ -331,7 +336,7 @@ export default class Details extends Component {
         employee[property] = value;
 
         this.setState({employee: employee},
-            () => { this.validateRank(value) }
+            () => { this.validateFields(value, property) }
         )
     };
 
@@ -339,38 +344,72 @@ export default class Details extends Component {
      * Validates the employee's new rank
      * Sets rank error if new rank is greater than the supervisor's rank
      * Sets rank error if new rank is less than any child's rank
-     * @param newRank
+     * @param {number|string}   newValue    The field's changed value
+     * @param {string}          fieldName   The field being edited
      */
-    validateRank = (newRank) => {
-        let rankError = this.state.rankError;
-        let supervisor = this.state.isEditing ? this.state.supervisor : this.state.tree;
-        let employee = this.state.employee;
-        let maxChildRank = _.max( (employee.children || []).map( (child) => {
-            return child.rank
-        }));
+    validateFields = (newValue, fieldName) => {
+        let errors = this.state.formErrors;
 
-        if (!!supervisor && newRank > supervisor.rank) {
-            rankError = 'Rank cannot be greater than supervisor\'s';
+        switch(fieldName) {
+            case 'rank':
+                let supervisor = this.state.supervisor;
+                let employee = this.state.employee;
+                let maxChildRank = _.max( (employee.children || []).map( (child) => {
+                    return child.rank
+                }));
+
+                if (!!supervisor && newValue > supervisor.rank) {
+                    errors['rank'] = 'Rank cannot be greater than supervisor\'s';
+                }
+                else if ( newValue < maxChildRank ) {
+                    errors['rank'] = 'Rank must be greater than all children';
+                }
+                else if ( !newValue || newValue <= 0 ) {
+                    errors['rank'] = 'Rank must be greater than 0';
+                }
+                else {
+                    errors['rank'] = '';
+                }
+                break;
+            default:
+                if (!newValue || newValue.length <= 0) {
+                    errors[fieldName] = 'This field is required';
+                }
+                else {
+                    errors[fieldName] = '';
+                }
         }
-        else if ( newRank < maxChildRank) {
-            rankError = 'Rank must be greater than all children';
-        }
-        else {
-            rankError = '';
-        }
+
+
 
         // set rank error and
         this.setState({
-            rankError: rankError,
-            formValid: rankError.length <= 0
-        });
+            formErrors: errors
+        }, this.validateForm);
+    };
+
+    validateForm = () => {
+        const isValid = this.state.formErrors.rank.length <= 0 &&
+            this.state.formErrors.name.length <= 0 &&
+            this.state.formErrors.title.length <= 0;
+
+        console.log(this.state.formErrors)
+
+        this.setState({
+            formValid: isValid
+        })
     };
 
     render () {
         const employee = this.state.employee;
-        const supervisor = this.state.supervisor;
+        let supervisor, details;
 
-        let details;
+        if (this.state.supervisor) {
+            supervisor = this.state.supervisor;
+        }
+        else if (employee.id !== this.state.tree.id) {
+            supervisor = this.state.tree;
+        }
 
         // if editing or creating
         if (this.state.isEditing || !employee.id) {
@@ -384,7 +423,7 @@ export default class Details extends Component {
                     onSubmit={this.state.onSubmit}
                     onCancel={this.editEmployee}
                     formValid={this.state.formValid}
-                    rankError={this.state.rankError}
+                    formErrors={this.state.formErrors}
                 />
             )
         }
