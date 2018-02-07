@@ -1,8 +1,16 @@
 # Organization Chart
 
-Display an organization chart. Click on the employees to update his or her name, title, rank, or supervisor.
-Supervisor to employee is a one to many relationship, and supervisors must have a rank greater than or equal to each
-reporting employee.
+Display an organization chart. 
+
+Supervisor to employee is a one-to-many relationship, and supervisors must have a rank greater than or equal to each
+reporting employee. If an employee and his supervisor share the same rank, that is denoted by the presence of a plus (+)
+symbol joining their nodes.
+
+Click on the EYE in an employees' node to view details and then update his or her name, title, rank, or supervisor.
+
+Click on the BIG, GREEN BUTTON at the top to add a new employee!
+
+Click on the TRASH CAN in a bottom-tier employee to remove that employee from the chart.
 
 ## Getting Started
 
