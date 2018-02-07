@@ -16,7 +16,18 @@
       top: 50%;
       visibility: hidden;
     }
+    .h-line-t {
+      position: absolute;
+      border-bottom: 1px solid #adb5bd;
+      height: 1px;
+      width: 30px;
+      left: 0;
+      right: 0;
+      margin: auto;
+      top: -13px;
+    }
   }
+
   .btn-trash {
     color: $form-feedback-invalid-color;
   }

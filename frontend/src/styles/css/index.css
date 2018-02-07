@@ -6076,6 +6076,15 @@ code {
     right: -30px;
     top: 50%;
     visibility: hidden; }
+  .org-chart .employee .h-line-t {
+    position: absolute;
+    border-bottom: 1px solid #adb5bd;
+    height: 1px;
+    width: 30px;
+    left: 0;
+    right: 0;
+    margin: auto;
+    top: -13px; }
 
 .org-chart .btn-trash {
   color: #dc3545; }

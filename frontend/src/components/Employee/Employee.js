@@ -15,7 +15,13 @@ import Details from './Details';
  * @returns {*}
  * @constructor
  */
-const Employee = ({employee, rankClass, showDetails, deleteEmployee}) => {
+const Employee = ({employee, showDetails, deleteEmployee}) => {
+
+    // display a horizontal line if employee and supervisor have same rank
+    let rankClass = '';
+    if (employee && employee.supervisorRank && employee.rank === employee.supervisorRank) {
+        rankClass = 'h-line-t'
+    }
 
     return (
         <div className="employee">
@@ -51,6 +57,7 @@ const Employee = ({employee, rankClass, showDetails, deleteEmployee}) => {
  * builds Employee component nodes for each employees' children
  * @param {Object}      tree            The organization hierarchy
  * @param {Function}    onEditClick     Displays the Details view for a given employee
+ * @param {Function}    onDeleteClick   Removes a bottom node employee from the chart
  * @returns {*} Returns the built organization chart
  */
 const OrgChart = ({tree, onEditClick, onDeleteClick}) => {
@@ -58,24 +65,9 @@ const OrgChart = ({tree, onEditClick, onDeleteClick}) => {
     /**
      *
      * @param {Object}      tree            The tree for employee node being rendered
-     * @param {Object[]}    parentChildren  Siblings of current employee
-     * @param {number}      currIndex       Index of the current child in parentChildren
      * @returns {*}         Employee node components for the org chart
      */
-    const displayEmployees = (tree, parentChildren, currIndex) => {
-
-        /**
-         * Checks current employee's siblings for same rank
-         * If found, returns horizontal line class to be appended to employee's node
-         * @param   {number}    index   The index of current employee in parent's children
-         * @returns {string}            The horizontal line class or empty string
-         */
-        const hasSameRankSibling = (index) => {
-            if (!parentChildren || !parentChildren[index]) return '';
-            return (index < (parentChildren || []).length - 1 &&
-                parentChildren[index].rank === parentChildren[index+1].rank) ?
-                'h-line-r ' : '';
-        };
+    const displayEmployees = (tree) => {
 
         /**
          * Returns recursive rendering for remaining children
@@ -84,10 +76,12 @@ const OrgChart = ({tree, onEditClick, onDeleteClick}) => {
             return (
                 <div className="col" key={cIndex}>
                     <div className="v-line" />
-                    {displayEmployees(tree.children[cIndex],tree.children,cIndex)}
+                    {displayEmployees(tree.children[cIndex])}
                 </div>
             )
         }));
+
+        console.log(tree);
 
         return (
             <div className="org-chart">
@@ -95,7 +89,6 @@ const OrgChart = ({tree, onEditClick, onDeleteClick}) => {
                     <div className="col">
                         <Employee
                             employee={tree}
-                            rankClass={hasSameRankSibling(currIndex)}
                             showDetails={onEditClick}
                             deleteEmployee={onDeleteClick}
                         />
@@ -109,7 +102,7 @@ const OrgChart = ({tree, onEditClick, onDeleteClick}) => {
     };
 
     return (
-        <div>{displayEmployees(tree,null,0)}</div>
+        <div>{displayEmployees(tree)}</div>
     );
 };
 
@@ -158,10 +151,13 @@ export default class EmployeeList extends Component {
     /**
      * Builds employee data and updates the employee
      * Then updates the state to re-render org chart
+     * @param {Object} e            The click event
      * @param {Object} employee     Employee whose details are being updated
      * @returns {Promise<void>}
      */
-    async saveEmployee(employee) {
+    async saveEmployee(e, employee) {
+        e.preventDefault();
+        e.stopPropagation();
         if (employee.id) {
             await EmployeeService.update(employee.id, employee);
         }
@@ -172,9 +168,14 @@ export default class EmployeeList extends Component {
         this.setState({
             showDetails: false,
             detailEmployee: null
-        },)
+        },this.buildTree)
     }
 
+    /**
+     * Deletes a bottom node employee from the chart
+     * @param {number} employeeId   The id of the employee to delete
+     * @returns {Promise<void>}     Re-renders the org chart upon deletion
+     */
     async deleteEmployee(employeeId) {
         if (window.confirm('Are you sure?')) {
             await EmployeeService.destroy(employeeId);
@@ -182,6 +183,10 @@ export default class EmployeeList extends Component {
         }
     }
 
+    /**
+     * Rebuild org chart and update the state
+     * @returns {Promise<void>}     Re-renders the org chart upon retrieval
+     */
     async buildTree() {
         let updatedTree = await this.getEmployees();
         this.setState({tree: updatedTree});
@@ -213,6 +218,15 @@ export default class EmployeeList extends Component {
             // append employees to supervisor children array
             for (i = 0; i < employees.length; i += 1) {
                 let currEmployee = employees[i];
+
+                // set transient supervisor rank on employee object
+                let supervisorObj = _.find(employees, (e) => {
+                    return e.id === currEmployee.supervisor;
+                });
+
+                if (supervisorObj) {
+                    currEmployee['supervisorRank'] = supervisorObj.rank;
+                }
 
                 // if employee is not the boss
                 if (currEmployee.supervisor !== null) {

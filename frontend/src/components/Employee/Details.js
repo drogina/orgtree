@@ -145,7 +145,7 @@ const EditDetails = ({employee, onEmployeeChanged, onSuperSelected,
                 </button>
                 <button type="submit"
                         className="btn btn-outline-light"
-                        onClick={() => onSubmit(employee)}
+                        onClick={(e) => onSubmit(e,employee)}
                         disabled={!formValid}>
                     Save
                 </button>
